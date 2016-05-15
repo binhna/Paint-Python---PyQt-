@@ -1,4 +1,3 @@
-
 import sys
 import os
 from PyQt4 import QtGui, QtCore
@@ -28,7 +27,8 @@ class Widget(QWidget):
         painter = QPainter(self)
         painter.setPen(QtCore.Qt.red)
         painter.drawImage(event.rect(), self.image)
-        painter.drawLine(self.start, self.end)
+        #painter.drawLine(self.start, self.end)
+        #_drawLine(self.start, self.end, self)
         self.update()
             #painter.restore()
             #self.render(self)
@@ -46,8 +46,9 @@ class Widget(QWidget):
 
     def mouseReleaseEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton and self.keepDraw:
-            painter = QPainter(self.image)
-            painter.drawLine(self.start, self.end)
+            #painter = QPainter(self.image)
+            #painter.drawLine(self.start, self.end)
+            _drawLine(self.start, self.end, self.image)
             self.update()
             self.keepDraw = False
         #self.x0 = self.y0 = -1
@@ -56,7 +57,12 @@ class Widget(QWidget):
     def mouseMoveEvent(self, event):
         if (event.buttons() & QtCore.Qt.LeftButton) and self.keepDraw:
             self.end = event.pos()
-        #self.update()
+            #_drawLine(self.start,self.end,self)
+            #p = QPainter(self.image)
+            #p.drawLine(self.start, self.end)
+            _drawLine(self.start, self.end, self.image)
+            self.start = self.end
+        self.update()
 
     def drawLineTo(self, end):
         self.update()
@@ -66,7 +72,7 @@ class Widget(QWidget):
         super(Widget, self).resizeEvent(event)
 
     def resizeImage(self, image, newSize):
-        print("ccc")
+        #print("ccc")
         if image.size() == newSize:
             return
         newImage = QtGui.QImage(newSize, QtGui.QImage.Format_RGB32)
@@ -75,8 +81,47 @@ class Widget(QWidget):
         painter.drawImage(QtCore.QPoint(0, 0), image)
         self.image = newImage
 
+
+def _drawLine(start, end, k):
+    if start == end:
+        return
+    import math
+    y = start.y()
+    x = start.x()
+    f = lambda x: int(x + math.modf(x)[0])
+    p = QPainter(k)
+    if (end.x() - start.x()) != 0:
+        m = ((end.y() - start.y()) / (end.x() - start.x()))
+        b = start.y() - m * start.x()
+        if(abs(m) > 1):
+            temph = (end.y() - start.y()) / abs(end.y() - start.y())
+            while (y != end.y()):
+                x = f((y - b) / m)
+                p.drawPoint(x, (y))
+                y += temph
+        elif(abs(m) >= 0):
+            tempw = (end.x() - start.x()) / abs(end.x() - start.x())
+            while (x != end.x()):
+                y = f(x * m + b)
+                p.drawPoint(x, y)
+                x += tempw
+    else:
+        temph = (end.y() - start.y()) / abs(end.y() - start.y())
+        while (y != end.y()):
+            p.drawPoint(x, y)
+            y += temph
+
+def _drawRect(start, end, k):
+    b = QPoint(end.x(), start.y())
+    d = QPoint(start.x(), end.y())
+
+
 app = QApplication(sys.argv)
 form = Widget()
 form.show()
 app.exec_()
+
+
+
+
 
