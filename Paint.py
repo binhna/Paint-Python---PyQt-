@@ -28,7 +28,7 @@ class Widget(QWidget):
         painter.setPen(QtCore.Qt.red)
         painter.drawImage(event.rect(), self.image)
         #painter.drawLine(self.start, self.end)
-        #_drawLine(self.start, self.end, self)
+        _drawRect(self.start, self.end, self)
         self.update()
             #painter.restore()
             #self.render(self)
@@ -48,7 +48,7 @@ class Widget(QWidget):
         if event.button() == QtCore.Qt.LeftButton and self.keepDraw:
             #painter = QPainter(self.image)
             #painter.drawLine(self.start, self.end)
-            _drawLine(self.start, self.end, self.image)
+            _drawRect(self.start, self.end, self.image)
             self.update()
             self.keepDraw = False
         #self.x0 = self.y0 = -1
@@ -60,8 +60,8 @@ class Widget(QWidget):
             #_drawLine(self.start,self.end,self)
             #p = QPainter(self.image)
             #p.drawLine(self.start, self.end)
-            _drawLine(self.start, self.end, self.image)
-            self.start = self.end
+
+
         self.update()
 
     def drawLineTo(self, end):
@@ -83,13 +83,14 @@ class Widget(QWidget):
 
 
 def _drawLine(start, end, k):
+    p = QPainter(k)
     if start == end:
+        p.drawPoint(start)
         return
     import math
     y = start.y()
     x = start.x()
     f = lambda x: int(x + math.modf(x)[0])
-    p = QPainter(k)
     if (end.x() - start.x()) != 0:
         m = ((end.y() - start.y()) / (end.x() - start.x()))
         b = start.y() - m * start.x()
@@ -110,10 +111,15 @@ def _drawLine(start, end, k):
         while (y != end.y()):
             p.drawPoint(x, y)
             y += temph
+    p.drawPoint(end)
 
 def _drawRect(start, end, k):
     b = QPoint(end.x(), start.y())
     d = QPoint(start.x(), end.y())
+    _drawLine(start, b, k)
+    _drawLine(b, end, k)
+    _drawLine(start, d, k)
+    _drawLine(d, end, k)
 
 
 app = QApplication(sys.argv)
