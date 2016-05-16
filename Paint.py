@@ -4,7 +4,6 @@ from PyQt4 import QtGui, QtCore
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-
 class Widget(QWidget):
 
     def __init__(self):
@@ -16,19 +15,25 @@ class Widget(QWidget):
         self.resize(400, 300)
         self.move(100, 100)
         self.setWindowTitle("Events")
-        self.image = QImage()
+        imageSize = QtCore.QSize(1366, 768)
+        self.image = QtGui.QImage(imageSize, QtGui.QImage.Format_RGB32)
+
+        self.image.fill(QtGui.qRgb(255, 255, 255))
+
+
 
     def closeEvent(self, event):
         print("Closed")
 
 
     def paintEvent(self, event):
-
         painter = QPainter(self)
         painter.setPen(QtCore.Qt.red)
-        painter.drawImage(event.rect(), self.image)
+        cur_size = QRect(0, 0, self.width(), self.height())
+        temp = self.image.copy(cur_size)
+        painter.drawImage(event.rect(), temp)
         #painter.drawLine(self.start, self.end)
-        _drawRect(self.start, self.end, self)
+        _drawCircle(self.start, self.end, self)
         self.update()
             #painter.restore()
             #self.render(self)
@@ -48,7 +53,7 @@ class Widget(QWidget):
         if event.button() == QtCore.Qt.LeftButton and self.keepDraw:
             #painter = QPainter(self.image)
             #painter.drawLine(self.start, self.end)
-            _drawRect(self.start, self.end, self.image)
+            _drawCircle(self.start, self.end, self.image)
             self.update()
             self.keepDraw = False
         #self.x0 = self.y0 = -1
@@ -67,19 +72,6 @@ class Widget(QWidget):
     def drawLineTo(self, end):
         self.update()
 
-    def resizeEvent(self, event):
-        self.resizeImage(self.image, event.size())
-        super(Widget, self).resizeEvent(event)
-
-    def resizeImage(self, image, newSize):
-        #print("ccc")
-        if image.size() == newSize:
-            return
-        newImage = QtGui.QImage(newSize, QtGui.QImage.Format_RGB32)
-        newImage.fill(QtGui.qRgb(255, 255, 255))
-        painter = QtGui.QPainter(newImage)
-        painter.drawImage(QtCore.QPoint(0, 0), image)
-        self.image = newImage
 
 
 def _drawLine(start, end, k):
@@ -121,6 +113,72 @@ def _drawRect(start, end, k):
     _drawLine(start, d, k)
     _drawLine(d, end, k)
 
+def _drawCircle(start, end, k):
+    xc = int(abs(end.x() + start.x()) / 2)
+    yc = int(abs(end.y() + start.y()) / 2)
+    p = QPainter(k)
+    def point4(xc, yc, x, y):
+        p.drawPoint(x + xc, y + yc)
+        p.drawPoint(x + xc, -y + yc)
+        p.drawPoint(-x + xc, -y + yc)
+        p.drawPoint(-x + xc, y + yc)
+
+    def point8(xc, yc, x, y):
+        p.drawPoint(x + xc, y + yc)
+        p.drawPoint(-x + xc, y + yc)
+        p.drawPoint(x + xc, -y + yc)
+        p.drawPoint(-x + xc, -y + yc)
+        p.drawPoint(y + xc, x + yc)
+        p.drawPoint(-y + xc, x + yc)
+        p.drawPoint(y + xc, -x + yc)
+        p.drawPoint(-y + xc, -x + yc)
+
+    if abs(end.y() - start.y()) == abs(end.x() - start.x()):
+        r = int(abs(end.y() - start.y()) / 2)
+        x = 0
+        y = r
+        f = 1 - r
+        point8(xc, yc, x, y)
+        while(x < y):
+            if (f < 0):
+                f += (x<<1) + 3
+            else:
+                y -= 1
+                f += ((x-y)<<1) + 5
+            x += 1
+            point8(xc, yc, x, y)
+    else:
+        a = int(abs(end.x() - start.x()) / 2)
+        b = int(abs(end.y() - start.y()) / 2)
+        if a == 0 or b == 0:
+            _drawLine(start, end, k)
+            return
+        c = float((b**2)/a/a)
+        x = 0
+        y = b
+        point4(xc, yc, x, y)
+        q = c*2 - b*2 + 1
+        while(y >= c*x):
+            if q < 0:
+                q += (x*2 + 3)*(c*2)
+            else:
+                q += (x*2 + 3)*(c*2) + (1-y)*4
+                y -= 1
+            x += 1
+            point4(xc, yc, x, y)
+        x = a
+        y = 0
+        c = float((a**2)/b/b)
+        point4(xc,yc,x,y)
+        q = c*2 - a*2 + 1
+        while(c*y <= x):
+            if (q < 0):
+                q += (c*2) * (y*2 + 3)
+            else:
+                q += (c*2) * (y*2 + 3) + (1 - x)*4
+                x -= 1
+            y += 1
+            point4(xc,yc,x,y)
 
 app = QApplication(sys.argv)
 form = Widget()
